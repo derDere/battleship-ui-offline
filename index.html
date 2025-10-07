@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship UI Offline</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 10px;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .board-section {
+            margin-bottom: 30px;
+        }
+
+        .board-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .enemy-title {
+            color: #d32f2f;
+        }
+
+        .player-title {
+            color: #1976d2;
+        }
+
+        .board-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: 30px repeat(10, 1fr);
+            grid-template-rows: 30px repeat(10, 1fr);
+            gap: 1px;
+            background-color: #333;
+            padding: 1px;
+            border: 2px solid #333;
+        }
+
+        /* Responsive cell sizes */
+        @media (min-width: 768px) {
+            .board {
+                grid-template-columns: 40px repeat(10, 40px);
+                grid-template-rows: 40px repeat(10, 40px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .board {
+                grid-template-columns: 25px repeat(10, 25px);
+                grid-template-rows: 25px repeat(10, 25px);
+            }
+        }
+
+        .cell {
+            background-color: white;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cell:hover {
+            opacity: 0.8;
+        }
+
+        .label {
+            background-color: #e0e0e0;
+            cursor: default;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .label:hover {
+            opacity: 1;
+        }
+
+        /* Enemy board cell states */
+        .enemy-cell.empty {
+            background-color: white;
+        }
+
+        .enemy-cell.hit {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .enemy-cell.miss {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        /* Player board cell states */
+        .player-cell.empty {
+            background-color: white;
+        }
+
+        .player-cell.ship {
+            background-color: #9e9e9e;
+        }
+
+        .player-cell.invalid {
+            background-color: #f44336;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .edit-mode {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ship-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        .instructions {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .instructions p {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .control-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .instructions {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Battleship UI Offline</h1>
+        
+        <!-- Enemy Board -->
+        <div class="board-section">
+            <div class="board-title enemy-title">Enemy Board (Radar View)</div>
+            <div class="board-container">
+                <div class="board" id="enemyBoard"></div>
+            </div>
+        </div>
+        
+        <!-- Player Board -->
+        <div class="board-section">
+            <div class="board-title player-title">Your Board (Ocean View)</div>
+            <div class="board-container">
+                <div class="board" id="playerBoard"></div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-row">
+                    <div class="edit-mode">
+                        <input type="checkbox" id="editMode">
+                        <label for="editMode">Edit Mode</label>
+                    </div>
+                    
+                    <div class="ship-selector">
+                        <label for="shipType">Ship:</label>
+                        <select id="shipType">
+                            <option value="carrier">Carrier (5 cells)</option>
+                            <option value="battleship">Battleship (4 cells)</option>
+                            <option value="cruiser">Cruiser (3 cells)</option>
+                            <option value="submarine">Submarine (3 cells)</option>
+                            <option value="destroyer">Destroyer (2 cells)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <p><strong>Enemy Board (Top):</strong> Click cells to mark hits (red) or misses (blue). Click again to cycle through states.</p>
+            <p><strong>Your Board (Bottom):</strong> Enable Edit Mode, select a ship, then click to place. Click the same starting cell again to rotate.</p>
+            <p><strong>Ship Validation:</strong> Ships turn red if they go outside the board or overlap/touch other ships.</p>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const enemyBoard = Array(10).fill(null).map(() => Array(10).fill('empty'));
+        const playerBoard = Array(10).fill(null).map(() => Array(10).fill('empty'));
+        const placedShips = new Map(); // shipType -> {startRow, startCol, length, horizontal, cells}
+        
+        // Ship configurations
+        const shipTypes = {
+            carrier: 5,
+            battleship: 4,
+            cruiser: 3,
+            submarine: 3,
+            destroyer: 2
+        };
+        
+        // Column labels A-J
+        const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        
+        // Initialize the game
+        function initGame() {
+            createBoard('enemyBoard', 'enemy');
+            createBoard('playerBoard', 'player');
+            setupEventListeners();
+        }
+        
+        // Create a board with labels and cells
+        function createBoard(boardId, type) {
+            const board = document.getElementById(boardId);
+            board.innerHTML = '';
+            
+            // Top-left empty cell
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'cell label';
+            board.appendChild(emptyCell);
+            
+            // Column labels (A-J)
+            for (let col = 0; col < 10; col++) {
+                const labelCell = document.createElement('div');
+                labelCell.className = 'cell label';
+                labelCell.textContent = columnLabels[col];
+                board.appendChild(labelCell);
+            }
+            
+            // Rows with row labels and cells
+            for (let row = 0; row < 10; row++) {
+                // Row label (1-10)
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'cell label';
+                rowLabel.textContent = (row + 1).toString();
+                board.appendChild(rowLabel);
+                
+                // Row cells
+                for (let col = 0; col < 10; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${type}-cell`;
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.dataset.type = type;
+                    
+                    // Add click/touch event listeners
+                    cell.addEventListener('click', handleCellClick);
+                    cell.addEventListener('touchstart', handleCellClick);
+                    
+                    board.appendChild(cell);
+                }
+            }
+        }
+        
+        // Handle cell clicks/touches
+        function handleCellClick(event) {
+            event.preventDefault();
+            
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const type = cell.dataset.type;
+            
+            if (type === 'enemy') {
+                handleEnemyCellClick(row, col);
+            } else if (type === 'player') {
+                handlePlayerCellClick(row, col);
+            }
+        }
+        
+        // Handle enemy board cell clicks
+        function handleEnemyCellClick(row, col) {
+            const currentState = enemyBoard[row][col];
+            let newState;
+            
+            switch (currentState) {
+                case 'empty':
+                    newState = 'hit';
+                    break;
+                case 'hit':
+                    newState = 'miss';
+                    break;
+                case 'miss':
+                    newState = 'empty';
+                    break;
+            }
+            
+            enemyBoard[row][col] = newState;
+            updateEnemyBoardDisplay();
+        }
+        
+        // Handle player board cell clicks
+        function handlePlayerCellClick(row, col) {
+            const editMode = document.getElementById('editMode').checked;
+            if (!editMode) return;
+            
+            const shipType = document.getElementById('shipType').value;
+            const shipLength = shipTypes[shipType];
+            
+            // Check if we're clicking on the same starting position of an existing ship
+            const existingShip = placedShips.get(shipType);
+            if (existingShip && existingShip.startRow === row && existingShip.startCol === col) {
+                // Rotate the ship
+                rotateShip(shipType);
+            } else {
+                // Place new ship
+                placeShip(shipType, row, col, shipLength);
+            }
+        }
+        
+        // Place a ship on the player board
+        function placeShip(shipType, startRow, startCol, length) {
+            // Remove existing ship of this type
+            if (placedShips.has(shipType)) {
+                removeShip(shipType);
+            }
+            
+            // Try horizontal placement first
+            const horizontal = true;
+            const shipCells = [];
+            
+            // Calculate ship cells
+            for (let i = 0; i < length; i++) {
+                const cellRow = horizontal ? startRow : startRow + i;
+                const cellCol = horizontal ? startCol + i : startCol;
+                shipCells.push({ row: cellRow, col: cellCol });
+            }
+            
+            // Store ship info
+            placedShips.set(shipType, {
+                startRow,
+                startCol,
+                length,
+                horizontal,
+                cells: shipCells
+            });
+            
+            updatePlayerBoardDisplay();
+        }
+        
+        // Rotate a ship between horizontal and vertical
+        function rotateShip(shipType) {
+            const ship = placedShips.get(shipType);
+            if (!ship) return;
+            
+            const newHorizontal = !ship.horizontal;
+            const newCells = [];
+            
+            // Calculate new ship cells
+            for (let i = 0; i < ship.length; i++) {
+                const cellRow = newHorizontal ? ship.startRow : ship.startRow + i;
+                const cellCol = newHorizontal ? ship.startCol + i : ship.startCol;
+                newCells.push({ row: cellRow, col: cellCol });
+            }
+            
+            // Update ship info
+            ship.horizontal = newHorizontal;
+            ship.cells = newCells;
+            
+            updatePlayerBoardDisplay();
+        }
+        
+        // Remove a ship from the board
+        function removeShip(shipType) {
+            const ship = placedShips.get(shipType);
+            if (!ship) return;
+            
+            // Clear cells
+            ship.cells.forEach(({ row, col }) => {
+                if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+                    playerBoard[row][col] = 'empty';
+                }
+            });
+        }
+        
+        // Check if a ship placement is valid
+        function isValidPlacement(ship, currentShipType) {
+            const { cells } = ship;
+            
+            // Check bounds
+            for (const { row, col } of cells) {
+                if (row < 0 || row >= 10 || col < 0 || col >= 10) {
+                    return false;
+                }
+            }
+            
+            // Check for overlaps and adjacent ships
+            for (const { row, col } of cells) {
+                // Check for overlaps with other ships
+                for (const [otherType, otherShip] of placedShips) {
+                    if (otherType === currentShipType) continue; // Skip self
+                    
+                    for (const otherCell of otherShip.cells) {
+                        if (otherCell.row === row && otherCell.col === col) {
+                            return false; // Overlap
+                        }
+                        
+                        // Check adjacent cells (ships cannot touch)
+                        const rowDiff = Math.abs(otherCell.row - row);
+                        const colDiff = Math.abs(otherCell.col - col);
+                        if (rowDiff <= 1 && colDiff <= 1 && (rowDiff + colDiff > 0)) {
+                            return false; // Adjacent
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+        
+        // Update enemy board display
+        function updateEnemyBoardDisplay() {
+            const enemyCells = document.querySelectorAll('.enemy-cell');
+            enemyCells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const state = enemyBoard[row][col];
+                
+                // Remove all state classes
+                cell.classList.remove('empty', 'hit', 'miss');
+                cell.classList.add(state);
+                
+                // Update cell content
+                switch (state) {
+                    case 'hit':
+                        cell.textContent = 'X';
+                        break;
+                    case 'miss':
+                        cell.textContent = 'O';
+                        break;
+                    default:
+                        cell.textContent = '';
+                }
+            });
+        }
+        
+        // Update player board display
+        function updatePlayerBoardDisplay() {
+            // Reset all cells
+            const playerCells = document.querySelectorAll('.player-cell');
+            playerCells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // Reset classes
+                cell.classList.remove('empty', 'ship', 'invalid');
+                cell.classList.add('empty');
+                cell.textContent = '';
+                
+                // Reset board state
+                playerBoard[row][col] = 'empty';
+            });
+            
+            // Place all ships
+            for (const [shipType, ship] of placedShips) {
+                const isValid = isValidPlacement(ship, shipType);
+                const cellClass = isValid ? 'ship' : 'invalid';
+                
+                ship.cells.forEach(({ row, col }) => {
+                    if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+                        const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"][data-type="player"]`);
+                        if (cell) {
+                            cell.classList.remove('empty', 'ship', 'invalid');
+                            cell.classList.add(cellClass);
+                            playerBoard[row][col] = cellClass;
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Edit mode change
+            document.getElementById('editMode').addEventListener('change', function() {
+                // Just update display, no additional logic needed
+            });
+            
+            // Ship type change
+            document.getElementById('shipType').addEventListener('change', function() {
+                // Just update the selected ship type, no additional logic needed
+            });
+        }
+        
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // Prevent context menu on mobile
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
