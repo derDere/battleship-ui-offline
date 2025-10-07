@@ -13,7 +13,7 @@
 
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color: #708090; /* Steel gray background */
             padding: 10px;
             user-select: none;
         }
@@ -21,12 +21,98 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
+            position: relative;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .header {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .help-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .help-button:hover {
+            background-color: #555;
+            transform: scale(1.05);
+        }
+
+        .help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .help-overlay.active {
+            display: flex;
+        }
+
+        .help-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .help-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .help-close:hover {
             color: #333;
+        }
+
+        .coordinates-display {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: none;
+            z-index: 500;
         }
 
         .board-section {
@@ -59,9 +145,18 @@
             grid-template-columns: 30px repeat(10, 1fr);
             grid-template-rows: 30px repeat(10, 1fr);
             gap: 1px;
-            background-color: #333;
             padding: 1px;
             border: 2px solid #333;
+        }
+
+        .board.enemy-board {
+            background-color: #000; /* Black background for radar */
+            border-color: #00ff00; /* Green border for radar */
+        }
+
+        .board.player-board {
+            background-color: #1e90ff; /* Water blue background */
+            border-color: #0066cc; /* Darker blue border */
         }
 
         /* Responsive cell sizes */
@@ -96,7 +191,6 @@
         }
 
         .label {
-            background-color: #e0e0e0;
             cursor: default;
             font-weight: bold;
             font-size: 11px;
@@ -106,42 +200,97 @@
             opacity: 1;
         }
 
-        /* Enemy board cell states */
+        /* Enemy board labels (radar style) */
+        .enemy-board .label {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+
+        /* Player board labels (water style) */
+        .player-board .label {
+            background-color: #004466;
+            color: #87ceeb;
+            border: 1px solid #0066cc;
+        }
+
+        /* Enemy board cell states (radar/sonar style) */
         .enemy-cell.empty {
-            background-color: white;
+            background-color: #001a00;
+            border: 1px solid #003300;
         }
 
         .enemy-cell.hit {
-            background-color: #f44336;
+            background-color: #ff0000;
             color: white;
+            border: 1px solid #ff6666;
         }
 
         .enemy-cell.miss {
-            background-color: #2196f3;
-            color: white;
+            background-color: #006600;
+            color: #00ff00;
+            border: 1px solid #00ff00;
         }
 
-        /* Player board cell states */
+        /* Player board cell states (ocean/water style) */
         .player-cell.empty {
-            background-color: white;
-        }
-
-        .player-cell.ship {
-            background-color: #9e9e9e;
-        }
-
-        .player-cell.invalid {
-            background-color: #f44336;
+            background-color: #add8e6;
+            border: 1px solid #87ceeb;
         }
 
         .player-cell.hit {
-            background-color: #f44336;
+            background-color: #dc143c;
             color: white;
+            border: 1px solid #ff6347;
         }
 
         .player-cell.miss {
-            background-color: #2196f3;
+            background-color: #4682b4;
             color: white;
+            border: 1px solid #5f9ea0;
+        }
+
+        /* Ship backgrounds by type and board - enemy board (unknown ships) */
+        .enemy-cell.ship {
+            background-color: #333333;
+            border: 1px solid #666666;
+        }
+
+        /* Ship backgrounds by type and board - player board */
+        .player-cell.ship {
+            background-color: #696969;
+            border: 1px solid #2f4f4f;
+        }
+
+        .player-cell.invalid {
+            background-color: #ff4500;
+            border: 1px solid #ff6347;
+        }
+
+        /* Ship type specific backgrounds - player board */
+        .player-cell.ship.carrier {
+            background-color: #800080; /* Purple for carrier */
+            border: 1px solid #9932cc;
+        }
+
+        .player-cell.ship.battleship {
+            background-color: #8b4513; /* Brown for battleship */
+            border: 1px solid #a0522d;
+        }
+
+        .player-cell.ship.cruiser {
+            background-color: #2e8b57; /* Sea green for cruiser */
+            border: 1px solid #3cb371;
+        }
+
+        .player-cell.ship.submarine {
+            background-color: #4b0082; /* Indigo for submarine */
+            border: 1px solid #6a5acd;
+        }
+
+        .player-cell.ship.destroyer {
+            background-color: #b22222; /* Fire brick for destroyer */
+            border: 1px solid #dc143c;
         }
 
         .controls {
@@ -221,7 +370,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>Battleship UI Offline</h1>
+        <div class="header">
+            <h1>Battleship UI Offline</h1>
+            <button class="help-button" onclick="toggleHelp()">?</button>
+        </div>
+        
+        <!-- Coordinates Display -->
+        <div class="coordinates-display" id="coordinatesDisplay"></div>
+        
+        <!-- Help Overlay -->
+        <div class="help-overlay" id="helpOverlay">
+            <div class="help-content">
+                <button class="help-close" onclick="toggleHelp()">&times;</button>
+                <h3>How to Use:</h3>
+                <p><strong>Enemy Board (Top):</strong> Click cells to mark hits (red) or misses (blue). Click again to cycle through states.</p>
+                <p><strong>Your Board (Bottom):</strong> Enable Edit Mode to place ships (select ship, click to place, click same cell to rotate). Disable Edit Mode to mark hits/misses on your ships.</p>
+                <p><strong>Ship Validation:</strong> Ships turn red if they go outside the board or overlap/touch other ships.</p>
+            </div>
+        </div>
         
         <!-- Enemy Board -->
         <div class="board-section">
@@ -259,14 +425,6 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Instructions -->
-        <div class="instructions">
-            <h3>How to Use:</h3>
-            <p><strong>Enemy Board (Top):</strong> Click cells to mark hits (red) or misses (blue). Click again to cycle through states.</p>
-            <p><strong>Your Board (Bottom):</strong> Enable Edit Mode to place ships (select ship, click to place, click same cell to rotate). Disable Edit Mode to mark hits/misses on your ships.</p>
-            <p><strong>Ship Validation:</strong> Ships turn red if they go outside the board or overlap/touch other ships.</p>
-        </div>
     </div>
 
     <script>
@@ -299,6 +457,7 @@
         function createBoard(boardId, type) {
             const board = document.getElementById(boardId);
             board.innerHTML = '';
+            board.className = `board ${type}-board`;
             
             // Top-left empty cell
             const emptyCell = document.createElement('div');
@@ -332,6 +491,10 @@
                     // Add click/touch event listeners
                     cell.addEventListener('click', handleCellClick);
                     cell.addEventListener('touchstart', handleCellClick);
+                    
+                    // Add hover event listeners for coordinate display
+                    cell.addEventListener('mouseenter', handleCellHover);
+                    cell.addEventListener('mouseleave', hideCoordinates);
                     
                     board.appendChild(cell);
                 }
@@ -550,7 +713,7 @@
                 const col = parseInt(cell.dataset.col);
                 
                 // Reset classes
-                cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss');
+                cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss', 'carrier', 'battleship', 'cruiser', 'submarine', 'destroyer');
                 cell.classList.add('empty');
                 cell.textContent = '';
                 
@@ -567,8 +730,11 @@
                     if (row >= 0 && row < 10 && col >= 0 && col < 10) {
                         const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"][data-type="player"]`);
                         if (cell) {
-                            cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss');
+                            cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss', 'carrier', 'battleship', 'cruiser', 'submarine', 'destroyer');
                             cell.classList.add(cellClass);
+                            if (isValid) {
+                                cell.classList.add(shipType); // Add ship type class for styling
+                            }
                             playerBoard[row][col] = cellClass;
                         }
                     }
@@ -599,6 +765,34 @@
             });
         }
         
+        // Handle cell hover for coordinate display
+        function handleCellHover(event) {
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const type = cell.dataset.type;
+            
+            if (row !== undefined && col !== undefined && type) {
+                const coordinate = columnLabels[col] + (row + 1);
+                const boardName = type === 'enemy' ? 'Top' : 'Bottom';
+                const display = document.getElementById('coordinatesDisplay');
+                display.textContent = `${boardName}: ${coordinate}`;
+                display.style.display = 'block';
+            }
+        }
+        
+        // Hide coordinates display
+        function hideCoordinates() {
+            const display = document.getElementById('coordinatesDisplay');
+            display.style.display = 'none';
+        }
+        
+        // Toggle help overlay
+        function toggleHelp() {
+            const helpOverlay = document.getElementById('helpOverlay');
+            helpOverlay.classList.toggle('active');
+        }
+        
         // Setup event listeners
         function setupEventListeners() {
             // Edit mode change
@@ -609,6 +803,20 @@
             // Ship type change
             document.getElementById('shipType').addEventListener('change', function() {
                 // Just update the selected ship type, no additional logic needed
+            });
+            
+            // Close help overlay when clicking outside content
+            document.getElementById('helpOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    toggleHelp();
+                }
+            });
+            
+            // Close help overlay with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('helpOverlay').classList.contains('active')) {
+                    toggleHelp();
+                }
             });
         }
         
