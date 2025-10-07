@@ -134,6 +134,16 @@
             background-color: #f44336;
         }
 
+        .player-cell.hit {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .player-cell.miss {
+            background-color: #2196f3;
+            color: white;
+        }
+
         .controls {
             display: flex;
             flex-direction: column;
@@ -254,7 +264,7 @@
         <div class="instructions">
             <h3>How to Use:</h3>
             <p><strong>Enemy Board (Top):</strong> Click cells to mark hits (red) or misses (blue). Click again to cycle through states.</p>
-            <p><strong>Your Board (Bottom):</strong> Enable Edit Mode, select a ship, then click to place. Click the same starting cell again to rotate.</p>
+            <p><strong>Your Board (Bottom):</strong> Enable Edit Mode to place ships (select ship, click to place, click same cell to rotate). Disable Edit Mode to mark hits/misses on your ships.</p>
             <p><strong>Ship Validation:</strong> Ships turn red if they go outside the board or overlap/touch other ships.</p>
         </div>
     </div>
@@ -263,6 +273,7 @@
         // Game state
         const enemyBoard = Array(10).fill(null).map(() => Array(10).fill('empty'));
         const playerBoard = Array(10).fill(null).map(() => Array(10).fill('empty'));
+        const playerHitBoard = Array(10).fill(null).map(() => Array(10).fill('empty')); // Track hits/misses on player board
         const placedShips = new Map(); // shipType -> {startRow, startCol, length, horizontal, cells}
         
         // Ship configurations
@@ -367,19 +378,40 @@
         // Handle player board cell clicks
         function handlePlayerCellClick(row, col) {
             const editMode = document.getElementById('editMode').checked;
-            if (!editMode) return;
             
-            const shipType = document.getElementById('shipType').value;
-            const shipLength = shipTypes[shipType];
-            
-            // Check if we're clicking on the same starting position of an existing ship
-            const existingShip = placedShips.get(shipType);
-            if (existingShip && existingShip.startRow === row && existingShip.startCol === col) {
-                // Rotate the ship
-                rotateShip(shipType);
+            if (editMode) {
+                // Edit mode: place/rotate ships
+                const shipType = document.getElementById('shipType').value;
+                const shipLength = shipTypes[shipType];
+                
+                // Check if we're clicking on the same starting position of an existing ship
+                const existingShip = placedShips.get(shipType);
+                if (existingShip && existingShip.startRow === row && existingShip.startCol === col) {
+                    // Rotate the ship
+                    rotateShip(shipType);
+                } else {
+                    // Place new ship
+                    placeShip(shipType, row, col, shipLength);
+                }
             } else {
-                // Place new ship
-                placeShip(shipType, row, col, shipLength);
+                // Non-edit mode: toggle hit/miss states
+                const currentState = playerHitBoard[row][col];
+                let newState;
+                
+                switch (currentState) {
+                    case 'empty':
+                        newState = 'hit';
+                        break;
+                    case 'hit':
+                        newState = 'miss';
+                        break;
+                    case 'miss':
+                        newState = 'empty';
+                        break;
+                }
+                
+                playerHitBoard[row][col] = newState;
+                updatePlayerBoardDisplay();
             }
         }
         
@@ -518,7 +550,7 @@
                 const col = parseInt(cell.dataset.col);
                 
                 // Reset classes
-                cell.classList.remove('empty', 'ship', 'invalid');
+                cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss');
                 cell.classList.add('empty');
                 cell.textContent = '';
                 
@@ -526,7 +558,7 @@
                 playerBoard[row][col] = 'empty';
             });
             
-            // Place all ships
+            // Place all ships first
             for (const [shipType, ship] of placedShips) {
                 const isValid = isValidPlacement(ship, shipType);
                 const cellClass = isValid ? 'ship' : 'invalid';
@@ -535,13 +567,36 @@
                     if (row >= 0 && row < 10 && col >= 0 && col < 10) {
                         const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"][data-type="player"]`);
                         if (cell) {
-                            cell.classList.remove('empty', 'ship', 'invalid');
+                            cell.classList.remove('empty', 'ship', 'invalid', 'hit', 'miss');
                             cell.classList.add(cellClass);
                             playerBoard[row][col] = cellClass;
                         }
                     }
                 });
             }
+            
+            // Apply hit/miss states on top of ship states
+            playerCells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const hitState = playerHitBoard[row][col];
+                
+                if (hitState !== 'empty') {
+                    // Remove existing classes and add hit/miss state
+                    cell.classList.remove('empty', 'ship', 'invalid');
+                    cell.classList.add(hitState);
+                    
+                    // Update cell content
+                    switch (hitState) {
+                        case 'hit':
+                            cell.textContent = 'X';
+                            break;
+                        case 'miss':
+                            cell.textContent = 'O';
+                            break;
+                    }
+                }
+            });
         }
         
         // Setup event listeners
